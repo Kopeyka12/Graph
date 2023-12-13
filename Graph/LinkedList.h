@@ -102,11 +102,11 @@ public:
 
     };
 
-
+    //итераторы, указывающие на начало дерева 
     LinkedListIterator<T> begin() const {
         return LinkedListIterator<T>(head);
     }
-
+    //итераторы, указывающие на конец дерева 
     LinkedListIterator<T> end() const {
         return LinkedListIterator<T>(nullptr);
     }
