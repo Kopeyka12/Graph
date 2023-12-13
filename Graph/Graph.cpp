@@ -1,6 +1,7 @@
 ﻿// Graph.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
 //
-
+//@avtor Мирошин В. И.
+//Основаня программа
 #include <iostream>
 #include "LinkedList.h"
 #include "GraphClass.h"

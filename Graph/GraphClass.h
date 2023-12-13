@@ -1,3 +1,5 @@
+//@avtor Мирошин В. И.
+//Класс Graph
 #include <iostream>
 #include <cstring>
 #include <vector>

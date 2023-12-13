@@ -1,3 +1,5 @@
+//@avtor Мирошин В. И.
+//Класс LinkedList
 #include <iostream>
 #include <vector>
 #include "AbsIterator.h"
