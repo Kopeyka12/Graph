@@ -1,4 +1,4 @@
-#pragma once
+
 template <typename T>
 // абстрактный класс итератора
 class AbsIterator

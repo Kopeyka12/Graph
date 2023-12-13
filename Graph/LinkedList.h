@@ -1,9 +1,5 @@
-#pragma once
-
-
 #include <iostream>
 #include <vector>
-#include <stdexcept> // для исключений
 #include "AbsIterator.h"
 
 // класс узла списка
