@@ -3,8 +3,8 @@
 #include <iostream>
 #include <vector>
 #include "AbsIterator.h"
+#include <fstream>
 
-// класс узла списка
 template <typename T>
 class Node {
 public:
@@ -41,22 +41,32 @@ public:
         }
     }
 
+    void ClearList() {
+        while (head != nullptr) {
+            Node<T>* temp = head;
+            head = head->next;
+            delete temp;
+        }
+    }
+
     // добавление узла в конец списка
     void addNode(const T& data);
     // Удаление узла по значению
     void removeNode(const T& data);
     // поиск узла по значению
     // true если узел найден, иначе false
-    bool searchNode(T& data);
+    bool searchNode(T& data) const;
     // поиск индекса узла, если не найден, то -1
-    int searchNodeInd(const T& data);
+    int searchNodeInd(const T& data) const;
     // значение узла по индексу
-    T& dataByInd(int ind);
+    T& dataByInd(int ind) const;
     // вывод списка в консоль
-    void printList();
+    void printList() const;
+    // вывод списка в файл
+    void printListToFile(const std::string& filename) const;
     // количеств узлов в списке
-    int ListSize();
-    std::vector<T> ListToVec();
+    int ListSize() const;
+    std::vector<T> ListToVec() const;
 
 
     // класс итератора для Linked List
@@ -100,11 +110,11 @@ public:
 
     };
 
-    //итераторы, указывающие на начало дерева 
+
     LinkedListIterator<T> begin() const {
         return LinkedListIterator<T>(head);
     }
-    //итераторы, указывающие на конец дерева 
+
     LinkedListIterator<T> end() const {
         return LinkedListIterator<T>(nullptr);
     }
@@ -167,7 +177,7 @@ void LinkedList<T>::removeNode(const T& data) {
 // true, если есть узел
 // иначе false
 template<typename T>
-bool LinkedList<T>::searchNode(T& data) {
+bool LinkedList<T>::searchNode(T& data) const {
     Node<T>* current = head;
     while (current != nullptr) {
         if (current->data == data) {
@@ -181,7 +191,7 @@ bool LinkedList<T>::searchNode(T& data) {
 // поиск индекса узла
 // -1, если нет узел
 template<typename T>
-int LinkedList<T>::searchNodeInd(const T& data) {
+int LinkedList<T>::searchNodeInd(const T& data) const {
     Node<T>* current = head;
     int ind = 0;
     while (current != nullptr) {
@@ -196,21 +206,34 @@ int LinkedList<T>::searchNodeInd(const T& data) {
 
 // значение узла по индексу
 template<typename T>
-T& LinkedList<T>::dataByInd(int ind) {
-   
+T& LinkedList<T>::dataByInd(int ind) const {
+    if (ind < 0) {
+        throw std::invalid_argument("Недопустимое значение индекса");
+    }
+    else {
         int i = 0;
+        //T res;
+
         Node<T>* current = head;
 
         while (i < ind) {
+            if (current == nullptr || current->next == nullptr) {
+                throw std::invalid_argument("Недопустимое значение индекса");
+            }
+            else {
                 current = current->next;
                 i++;
+            }
         }
+
         return current->data;
+
+    }
 }
 
 // вывод списка в консоль
 template<typename T>
-void LinkedList<T>::printList() {
+void LinkedList<T>::printList() const {
     Node<T>* current = head;
     while (current != nullptr) {
         std::cout << current->data << " ";
@@ -219,19 +242,38 @@ void LinkedList<T>::printList() {
     std::cout << std::endl;
 }
 
+// вывод списка в файл
 template<typename T>
-int LinkedList<T>::ListSize() {
+void LinkedList<T>::printListToFile(const std::string& filename) const {
+    std::ofstream fout(filename);
+    if (!fout.is_open()) // если файл не был открыт
+    {
+        throw std::invalid_argument("Файл не может быть открыт");
+    }
+
+    Node<T>* current = head;
+    while (current != nullptr) {
+        fout << current->data << std::endl;
+        current = current->next;
+    }
+
+    fout.close();
+}
+
+template<typename T>
+int LinkedList<T>::ListSize() const {
     int res = 0;
     Node<T>* current = head;
     while (current != nullptr) {
         res++;
+        //std::cout << current->data << " ";
         current = current->next;
     }
     return res;
 }
 
 template<typename T>
-std::vector<T> LinkedList<T>::ListToVec() {
+std::vector<T> LinkedList<T>::ListToVec() const {
     std::vector<T> t;
     Node<T>* current = this->head;
     while (current != nullptr) {

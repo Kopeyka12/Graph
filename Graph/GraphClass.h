@@ -1,10 +1,16 @@
 //@avtor Мирошин В. И.
 //Класс Graph
+#include <stdexcept> // для исключений
 #include <iostream>
 #include <cstring>
 #include <vector>
 #include <stack>
 #include <queue>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <climits> 
+
 #include "LinkedList.h"
 
 using namespace std;
@@ -23,11 +29,11 @@ private:
 
 	// методы для поиска вершины и указания ее позиции в списке
 	//int FindVertex(LinkedList<T>& L1, const T& vertex1);
-	int GetVertexPos(const T& vertex1);
+	int GetVertexPos(const T& vertex1) const;
 
 public:
 	// конструктор с заданием максимального числа вершин maxsize
-	Graph(int maxsize);
+	Graph(int maxsize = 1);
 
 	// конструктор копирования и т.д
 
@@ -46,12 +52,13 @@ public:
 	int NumberOfEdges() const;
 
 	// получение веса ребра
-	int GetWeight(const T& vertex1, const T& vertex2);
+	int GetWeight(const T& vertex1, const T& vertex2) const;
+	int GetWeightByInd(int ver1, int ver2) const;
 
 	// получение списка из соседних вершин
-	vector<T> GetNeighbors(const T& vertex);
+	vector<T> GetNeighbors(const T& vertex) const;
 	// получение соседних вершин, к которым есть путь
-	vector<T> GetFolowers(const T& vertex);
+	vector<T> GetFolowers(const T& vertex) const;
 
 	// методы модификации графа
 
@@ -72,14 +79,23 @@ public:
 	//int MinimumPath(const T& sVertex, const T& sVertex);
 
 	// обход в глубину
-	vector<T> DepthFirstSearch(const T& beginVertex);
+	vector<T> DepthFirstSearch(const T& beginVertex) const;
 
 	// обход в ширину
-	vector<T> BreadthFirstSearch(const T& beginVertex);
+	vector<T> BreadthFirstSearch(const T& beginVertex) const;
+
+	// чтение из файла
+	void ReadFromFile(const string& filename);
+	// запись в файл
+	void WriteToFile(const string& filename) const;
 
 	// алгоритм Беллмана-Форда
 	// возвращает вектор из кратчайших путей до каждой вершины
 	vector<T> Bellman_Ford(const T& beginVertex);
+
+	// алгоритм Дейкстры
+	// возвращает вектор из кратчайших путей до каждой вершины из вершины beginVertex
+	vector<T> dijkstra(const T& beginVertex) const;
 
 	// итератор для обхода вершин
 	//friend class VertexIterator<T>;
@@ -88,10 +104,14 @@ public:
 	int GetMaxSize() const;
 
 	// получение списка вершин
-	vector<T> GetVertexList();
+	vector<T> GetVertexList() const;
 
 	// получение матрицы смежности
-	T** GetEdges();
+	T** GetEdges() const;
+
+	// очистка графа
+	void ClearGraph();
+
 };
 
 // конструктор, обнуляет матрицу смежности и переменную graphsize
@@ -101,6 +121,11 @@ Graph<T>::Graph(int maxsize)
 {
 	edge = nullptr;
 
+	// вместо cout выбрасывать исключения
+	if (maxsize <= 0) {
+		throw invalid_argument("Неправильное максимальное количество вершин");
+		//std::cout << "Неправильная размерность массива";
+	}
 	maxGraphSize = maxsize;
 
 	// выделение памяти под матрицу
@@ -146,6 +171,20 @@ bool Graph<T>::GraphEmpty() const {
 	else return false;
 }
 
+// очистка графа
+template <typename T>
+void Graph<T>::ClearGraph() {
+	vertexList.ClearList();
+
+	// заполнение матрицы смежности нулями
+	for (int i = 0; i < maxGraphSize; i++)
+		for (int j = 0; j < maxGraphSize; j++)
+			edge[i][j] = 0;
+
+	graphsize = 0;
+
+}
+
 // количество вершин
 template <typename T>
 int  Graph<T>::NumberOfVertices() const {
@@ -173,41 +212,66 @@ int Graph<T>::GetMaxSize() const {
 
 // получение списка вершин
 template <typename T>
-vector<T> Graph<T>::GetVertexList() {
+vector<T> Graph<T>::GetVertexList() const {
 	return vertexList.ListToVec();
 }
 
 
 // получение матрицы смежности
 template <typename T>
-T** Graph<T>::GetEdges() {
+T** Graph<T>::GetEdges() const {
 	return edge;
 }
 
 // получение индекса вершины в списке
 // если вершины нет, то возвращает -1
 template <typename T>
-int Graph<T>::GetVertexPos(const T& vertex1) {
+int Graph<T>::GetVertexPos(const T& vertex1) const {
 
 	return vertexList.searchNodeInd(vertex1);
+
 }
 
 // получение веса ребра
 template <typename T>
-int Graph<T>::GetWeight(const T& vertex1, const T& vertex2) {
+int Graph<T>::GetWeight(const T& vertex1, const T& vertex2) const {
 
 	int ver1 = GetVertexPos(vertex1);
 	int ver2 = GetVertexPos(vertex2);
 
+	if ((ver1 == -1) || (ver2 == -1)) {
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
+	else
 		return edge[ver1][ver2];
 
 }
 
-// получение соседей (смежных вершин)
+// получение веса ребра по индексам вершин
 template <typename T>
-vector<T> Graph<T>::GetNeighbors(const T& vertex) {
+int Graph<T>::GetWeightByInd(int ver1, int ver2) const {
+
+	//int ver1 = GetVertexPos(vertex1);
+	//int ver2 = GetVertexPos(vertex2);
+
+	if ((ver1 == -1) || (ver2 == -1)) {
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
+	else
+		return edge[ver1][ver2];
+
+}
+
+// получение соседей
+template <typename T>
+vector<T> Graph<T>::GetNeighbors(const T& vertex) const {
 	vector<T> v = {};
 	int pos = GetVertexPos(vertex);
+
+	if (pos <= -1) {
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
+	else {
 		for (int i = 0; i < graphsize; i++)
 		{
 			if (edge[pos][i] != 0)
@@ -216,18 +280,48 @@ vector<T> Graph<T>::GetNeighbors(const T& vertex) {
 				v.push_back(vertexList.dataByInd(i));
 		}
 		return v;
+	}
+	/*LinkedList<T>* L;
+	SeqListIterator<T> viter(vertexList);
+	// создать пустой список
+	L = new SeqList<T>;
+	// позиция в списке, соответствующая номеру строки матрицы смежности
+	int pos = GetVertexPos(vertex);
+	// если вершины vertex нет в списке вершин, закончить
+	if (pos - << - 1)
+	{
+		cerr << "GetNeighbors: такой вершины нет в графе." « endl;
+		return *L; // вернуть пустой список
+	}
+	// сканировать строку матрицы смежности и включать в список
+	// все вершины, имеющие ребро ненулевого веса из vertex
+	for (int i = 0; Kgraphsize; i++)
+	{
+		if (edge[pos][i] > 0)
+			L->lnsert(viter.Data());
+		viter.Next();
+	}
+	return *L;*/
 }
-//получить все смежные вершины
+
 template <typename T>
-vector<T> Graph<T>::GetFolowers(const T& vertex) {
+vector<T> Graph<T>::GetFolowers(const T& vertex) const {
 	vector<T> v = {};
 	int pos = GetVertexPos(vertex);
+
+	if (pos <= -1) {
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
+	else {
 		for (int i = 0; i < graphsize; i++)
 		{
 			if (edge[pos][i] != 0)
 				v.push_back(vertexList.dataByInd(i));
+			//else if (edge[i][pos] != 0)
+				//v.push_back(vertexList.dataByInd(i));
 		}
 		return v;
+	}
 }
 
 // метод вставки вершины
@@ -235,7 +329,7 @@ template <typename T>
 void Graph<T>::InsertVertex(const T& vertex)
 {
 	// проверить, заполнен ли граф и, если да, увеличить maxGraphSize
-	if (graphsize == maxGraphSize) {
+	if ((graphsize + 1) == maxGraphSize) {
 
 		int newmaxGraphSize = maxGraphSize * 2;
 
@@ -258,6 +352,7 @@ void Graph<T>::InsertVertex(const T& vertex)
 			{
 				temp[i][j] = edge[i][j];
 			}
+			// memcpy
 		}
 
 		// освобождение памяти старой матрицы смежности
@@ -285,26 +380,51 @@ void Graph<T>::DeleteVertex(const T& vertex)
 {
 	// получить позицию вершины в списке вершин
 	int pos = GetVertexPos(vertex);
+	//int row, col;
+	// если такой вершины нет, сообщить об этом и вернуть управление
+	if (pos == -1)
+	{
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
 
 	// удалить вершину и уменьшить graphsize
 	vertexList.removeNode(vertex);
 
+	// матрица смежности делится на три области
+	/*for (row = 0; row < pos; row++) { // область I
+		for (col = pos + 1; col < graphsize; col++) {
+			edge[row][col - 1] = edge[row][col];
+		}
+	}
+
+	for (row = pos + 1; row < graphsize; row++) {// область II
+		for (col = pos + 1; col < graphsize; col++) {
+			edge[row - 1][col - 1] = edge[row][col];
+		}
+	}
+
+	for (row = pos + 1; row < graphsize; row++) {// область III
+		for (col = 0; col < pos; col++) {
+			edge[row - 1][col] = edge[row][col];
+		}
+	}*/
+
 	int i = 0;
-	// редактируем матрицу смежности
+	// removing the vertex
 	while (pos < graphsize) {
-		// сдвигаем строки влево
+		// shifting the rows to left side
 		for (i = 0; i < graphsize; ++i) {
 			edge[i][pos] = edge[i][pos + 1];
 		}
 
-		// сдвигаем столбцы вправо
+		// shifting the columns upwards
 		for (i = 0; i < graphsize; ++i) {
 			edge[pos][i] = edge[pos + 1][i];
 		}
 		pos++;
 	}
 
-	// обновляем поле класса graphsize (кол-во вершин)
+	// decreasing the number of vertices
 	graphsize = vertexList.ListSize();
 
 }
@@ -315,7 +435,13 @@ void Graph<T>::InsertEdge(const T& vertex1, const T& vertex2, int weight) {
 	int ver1 = GetVertexPos(vertex1);
 	int ver2 = GetVertexPos(vertex2);
 
-	edge[ver1][ver2] = weight;
+	if ((ver1 == -1) || (ver2 == -1)) {
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
+	else {
+		edge[ver1][ver2] = weight;
+	}
+
 }
 
 // удаление ребра
@@ -324,7 +450,12 @@ void Graph<T>::DeleteEdge(const T& vertex1, const T& vertex2) {
 	int ver1 = GetVertexPos(vertex1);
 	int ver2 = GetVertexPos(vertex2);
 
+	if ((ver1 == -1) || (ver2 == -1)) {
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
+	else {
 		edge[ver1][ver2] = 0;
+	}
 }
 
 
@@ -332,17 +463,22 @@ void Graph<T>::DeleteEdge(const T& vertex1, const T& vertex2) {
 
 // обход в глубину
 template <typename T>
-vector<T> Graph<T>::DepthFirstSearch(const T& beginVertex) {
+vector<T> Graph<T>::DepthFirstSearch(const T& beginVertex) const {
 
+	if (GetVertexPos(beginVertex) == -1) {
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
+	
 	// стек для временного хранения вершин, ожидающих обработки
 	stack<T> st;
 
-	// L - список пройденных вершин 
-	//adjL содержит вершины,смежные с текущей
+
+	// L - список пройденных вершин
+	// adjL содержит вершины, смежные с текущей
 	vector<T> l = {}, adjl = {};
 
 	T vertex1;
-	//помещаем вершину узла в стек
+
 	st.push(beginVertex);
 
 	// продолжать обход, пока не опустеет стек
@@ -370,7 +506,11 @@ vector<T> Graph<T>::DepthFirstSearch(const T& beginVertex) {
 
 // обход в ширину
 template <typename T>
-vector<T> Graph<T>::BreadthFirstSearch(const T& beginVertex) {
+vector<T> Graph<T>::BreadthFirstSearch(const T& beginVertex) const {
+
+	if (GetVertexPos(beginVertex) == -1) {
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
 
 	// очередь для временного хранения вершин, ожидающих обработки
 	queue<T> qu;
@@ -404,5 +544,165 @@ vector<T> Graph<T>::BreadthFirstSearch(const T& beginVertex) {
 	}
 	// возвратить выходной список
 	return l;
+}
+
+
+// загрузка графа из файла
+// в файле храняться вершины и вес ребер
+template <typename T>
+void Graph<T>::ReadFromFile(const string& filename) {
+	ifstream fin(filename);
+
+	if (!fin.is_open()) // если файл не был открыт
+	{
+		throw invalid_argument("Файл не может быть открыт");
+	}
+	else {
+		this->ClearGraph(); // очищаем граф
+		string line;
+
+		int numberOfVerticies = 0;
+
+		//numberOfVerticies = fin.readline();
+		getline(fin, line);
+
+		numberOfVerticies = stoi(line);
+
+		T node;
+		//
+		for (int i = 0; i < numberOfVerticies; i++) {
+			getline(fin, line);
+			//std::istringstream - это объект класса string, 
+			//который используется для преобразования строки в различные переменные,
+			//и аналогично файлы могут быть преобразованы в строки.
+			std::istringstream iss(line);
+			if (!(iss >> node)) {
+				// В случае ошибки чтения строки
+				throw invalid_argument("Ошибка чтения файла");
+			}
+			this->InsertVertex(node);
+		}
+
+		T vertex_1, vertex_2;
+		int weight_1;
+
+		// Чтение файла построчно
+		while (std::getline(fin, line))
+		{
+			std::istringstream iss(line);
+
+			// Извлекаем из строки две вершины и вес ребра
+			if (!(iss >> vertex_1 >> vertex_2 >> weight_1))
+			{
+				// В случае ошибки чтения строки
+				throw invalid_argument("Ошибка чтения файла");
+			}
+
+			// Добавляем ребро в граф
+			InsertEdge(vertex_1, vertex_2, weight_1);
+		}
+
+		// Закрываем файл после чтения
+		fin.close();
+
+		// обновляем поле класса
+		graphsize = numberOfVerticies;
+	}
+}
+
+// запись графа в файл
+template <typename T>
+void Graph<T>::WriteToFile(const string& filename) const {
+	ofstream fout(filename);
+
+	if (!fout.is_open()) // если файл не был открыт
+	{
+		throw invalid_argument("Файл не может быть открыт");
+	}
+	else if (graphsize == 0) {
+		fout.close();
+		throw invalid_argument("Пустой граф");
+	}
+	else {
+		int number = this->NumberOfVertices();
+		fout << number << endl;
+
+		vector<T> vec = this->vertexList.ListToVec();
+		for (int i = 0; i < number; i++) {
+			fout << vec[i] << endl;
+		}
+
+		int numberEdge = 0;// количество ребер
+		/// проход по матрице смежности
+		for (int i = 0; i < NumberOfVertices(); i++)
+		{
+			for (int j = 0; j < NumberOfVertices(); j++)
+			{
+				if (edge[i][j] != 0) {
+					// выводим 2 вершины и ребро
+					fout << vertexList.dataByInd(i) << " " << vertexList.dataByInd(j) << " " << edge[i][j] << "\n";
+					numberEdge++;
+				}
+			}
+		}
+		fout.close();
+
+	}
+}
+
+
+// алгоритм Дейкстры
+// возвращает вектор из кратчайших путей до каждой вершины из вершины beginVertex
+template <typename T>
+vector<T> Graph<T>::dijkstra(const T& beginVertex) const {
+	int pos = GetVertexPos(beginVertex);
+	if (pos == -1) {
+		throw invalid_argument("Отсутствует требуемая вершина");
+	}
+
+	vector<int> d; // вектор кратчайших растояний
+	vector<bool> used; // вектор посещений
+
+	// изначально расстояния до вершин неизвестны (INT_MAX)
+	// все вершины не посещены (false)
+	for (int i = 0; i < NumberOfVertices(); i++) {
+		d.push_back(INT_MAX);
+		used.push_back(false);
+	}
+
+	d[pos] = 0; // расстояние из вершины до самой себя равно 0
+
+	// повторяем для всех вершин графа
+	for (int k = 0; k < NumberOfVertices(); k++) {
+		// для каждой вершины смотрим расстояние до всех других вершин по матрице смежности
+		for (int i = 0; i < NumberOfVertices(); i++) {
+			int w = GetWeightByInd(pos, i);
+
+			if (w < 0) {
+				throw invalid_argument("Алгоритм Дейкстры не поддерживает отрицательные веса");
+			}
+
+			// если путь до вершины есть, если вершина ещё не была посещена и
+			// если надено меньшее расстояние до данной вершины
+			if ((w != 0) && (used[i] == false) && ((d[pos] + w) < d[i])) {
+				d[i] = d[pos] + w; // записываем новое значение кратчайшего пути
+			}
+		}
+		// вершина пройдена, когда по матрице смежности были проверены все вершины относительно данной
+		used[pos] = true;
+
+		// находим индекс с минимальным значением расстояния на данный момент
+		// (из непросмотренных вершин)
+		int min1 = INT_MAX;
+		for (int j = 0; j < NumberOfVertices(); j++) {
+			if ((d[j] < min1) && (used[j] == false)) {
+				pos = j; // запоминаем индекс данной вершины
+				// от неё продолжится поиск кратчайших путей до остальных вершин
+			}
+		}
+
+	}
+	return d;
+
 }
 

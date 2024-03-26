@@ -13,5 +13,4 @@ public:
     // операторы сравнения
     virtual bool operator==(const AbsIterator<T>& o) const = 0;
     virtual bool operator!=(const AbsIterator<T>& o) const = 0;
-
 };

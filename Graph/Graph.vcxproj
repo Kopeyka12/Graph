@@ -127,7 +127,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="AbsIterator.cpp" />
     <ClCompile Include="Graph.cpp" />
+    <ClCompile Include="GraphClass.cpp" />
+    <ClCompile Include="LinkedList.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AbsIterator.h" />
